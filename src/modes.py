@@ -16,7 +16,6 @@ def interactive_mode(target_model, draft_model, tokenizer, args):
         
         input_ids = tokenizer.encode(prompt_text, return_tensors="pt").to(args.device)
         
-        # Autoregressive sampling
         print("\nRunning autoregressive sampling...")
         start_time = time.time()
         auto_output = autoregressive_sampling(
@@ -35,7 +34,6 @@ def interactive_mode(target_model, draft_model, tokenizer, args):
         print(f"\nLatency: {auto_time:.4f} seconds")
         print(f"Throughput: {auto_throughput:.2f} tokens/second")
         
-        # Speculative sampling
         print("\nRunning speculative sampling...")
         start_time = time.time()
         spec_output = speculative_sampling(
@@ -78,7 +76,6 @@ def benchmark(target_model, draft_model, tokenizer, dataloader, args):
         input_ids = batch['input_ids'].to(args.device)
         attention_mask = batch['attention_mask'].to(args.device)
         
-        # Autoregressive sampling
         start_time = time.time()
         auto_output = autoregressive_sampling(
             target_model, 
@@ -105,12 +102,11 @@ def benchmark(target_model, draft_model, tokenizer, dataloader, args):
         )
         spec_time = time.time() - start_time
         spec_tokens_generated = spec_output.shape[1] - input_ids.shape[1]
-        spec_throughput = spec_tokens_generated / spec_time  # tokens per second
+        spec_throughput = spec_tokens_generated / spec_time
         
         spec_latencies.append(spec_time)
         spec_throughputs.append(spec_throughput)
         
-        # Print results for this batch
         print(f"\nSample text: {tokenizer.decode(input_ids[0], skip_special_tokens=True)[:50]}...")
         print(f"Generated {auto_tokens_generated} tokens")
         print("\nAutoregressive Results:")
@@ -121,7 +117,6 @@ def benchmark(target_model, draft_model, tokenizer, dataloader, args):
         print(f"  Throughput: {spec_throughput:.2f} tokens/second")
         print(f"  Speedup: {auto_time/spec_time:.2f}x")
     
-    # Print overall benchmark results
     print("\n===== Benchmark Summary =====")
     print(f"Number of samples: {len(auto_latencies)}")
     print("\nAutoregressive:")

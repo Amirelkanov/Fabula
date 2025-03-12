@@ -18,8 +18,8 @@ def parse_arguments():
                         help='Random seed (default: 42)')
     parser.add_argument('--benchmark', action='store_true', 
                         help='Run in benchmark mode')
-    parser.add_argument('--device', type=str, default='cuda:0' if torch.cuda.is_available() else 'cpu', 
-                        help='Device to run on (default: cuda:0 or cpu if CUDA not available)')
+    parser.add_argument('--device', type=str, default='cuda:4' if torch.cuda.is_available() else 'cpu', 
+                        help='Device to run on (default: cuda:4 or cpu if CUDA not available)')
     parser.add_argument('--lookahead_k', type=int, default=4, 
                         help='Number of tokens to lookahead in speculative sampling (default: 4)')
     parser.add_argument('--batch_size', type=int, default=1, 
@@ -31,7 +31,6 @@ def parse_arguments():
 if __name__ == "__main__":
     args = parse_arguments()
     
-    # Set random seed
     torch.manual_seed(args.seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(args.seed)
