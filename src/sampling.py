@@ -1,7 +1,7 @@
 import torch
 
 from constants import EPS
-from helpers import generate_draft_sequence, sample_from_logits, get_distribution, sample_from_corrected_distribution
+from helpers import generate_draft_sequence, sample_from_logits, get_distribution, sample_from_residual_distribution
 
 @torch.no_grad()
 def autoregressive_sampling(model, initial_prompt_seq, target_len, temperature=1.0):
@@ -51,7 +51,7 @@ def speculative_sampling(target_model, draft_model, initial_prompt_seq, target_l
                     break
             else:
                 # Sample from (q - p)+ and break
-                resampled_token = sample_from_corrected_distribution(q, p)
+                resampled_token = sample_from_residual_distribution(q, p)
                 result_seq = torch.cat([result_seq, resampled_token], dim=1)
                 n += 1
                 
