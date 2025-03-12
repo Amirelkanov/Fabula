@@ -1,39 +1,60 @@
-import time
-import random
+import argparse
 import torch
-from tqdm import tqdm
-from transformers import AutoTokenizer, AutoModelForCausalLM
 import os
-from sampling import autoregressive_sampling, speculative_sampling
+from transformers import AutoTokenizer, AutoModelForCausalLM
+from constants import TARGET_MODEL, DRAFT_MODEL
+from modes import interactive_mode, benchmark
+from dataloader import get_dataloader
 
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
-device = "cuda:4" if torch.cuda.is_available() else "cpu"
+def parse_arguments():
+    parser = argparse.ArgumentParser(description='Speculative Sampling Demo')
+    parser.add_argument('--temperature', type=float, default=1.0, 
+                        help='Temperature for sampling (default: 1.0)')
+    parser.add_argument('--max_tokens', type=int, default=200, 
+                        help='Maximum number of tokens to generate (default: 200)')
+    parser.add_argument('--seed', type=int, default=42, 
+                        help='Random seed (default: 42)')
+    parser.add_argument('--benchmark', action='store_true', 
+                        help='Run in benchmark mode')
+    parser.add_argument('--device', type=str, default='cuda:0' if torch.cuda.is_available() else 'cpu', 
+                        help='Device to run on (default: cuda:0 or cpu if CUDA not available)')
+    parser.add_argument('--lookahead_k', type=int, default=4, 
+                        help='Number of tokens to lookahead in speculative sampling (default: 4)')
+    parser.add_argument('--batch_size', type=int, default=1, 
+                        help='Batch size for benchmark mode (default: 1)')
+    parser.add_argument('--num_samples', type=int, default=10, 
+                        help='Number of samples to use for benchmarking (default: 10)')
+    return parser.parse_args()
 
-torch.manual_seed(42)
-print("Warming up...")
-target_model = AutoModelForCausalLM.from_pretrained("facebook/opt-13b", torch_dtype=torch.float16).to(device)
-draft_model = AutoModelForCausalLM.from_pretrained("facebook/opt-1.3b", torch_dtype=torch.float16).to(device)
-tokenizer = AutoTokenizer.from_pretrained("facebook/opt-13b")
-print("Warm up has ended.")
-
-prompt_text = "Once upon a time, there was a brave knight named Sir Lancelot. He embarked on a quest to"
-input_ids = tokenizer.encode(prompt_text, return_tensors="pt").to(device)
-max_tokens = 100
-
-
-start_time = time.time()
-ars_output = autoregressive_sampling(target_model, input_ids, max_tokens+input_ids.shape[0])
-ars_time = time.time() - start_time
-ars_text = tokenizer.decode(ars_output[0], skip_special_tokens=True)
-
-print(ars_text)
-print(ars_time)
-
-start_time = time.time()
-sps_output = speculative_sampling(target_model, draft_model, input_ids, max_tokens+input_ids.shape[0])
-ars_time = time.time() - start_time
-ars_text = tokenizer.decode(ars_output[0], skip_special_tokens=True)
-
-print(ars_text)
-print(ars_time)
+if __name__ == "__main__":
+    args = parse_arguments()
+    
+    # Set random seed
+    torch.manual_seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(args.seed)
+    
+    print(f"Running with arguments: {args}")
+    print("Loading models...")
+    
+    target_model = AutoModelForCausalLM.from_pretrained(
+        TARGET_MODEL, 
+        torch_dtype=torch.float16
+    ).to(args.device)
+    
+    draft_model = AutoModelForCausalLM.from_pretrained(
+        DRAFT_MODEL, 
+        torch_dtype=torch.float16
+    ).to(args.device)
+    
+    tokenizer = AutoTokenizer.from_pretrained(TARGET_MODEL)
+    print("Models loaded successfully.")
+    
+    if args.benchmark:
+        print("Loading Shakespeare dataset from Hugging Face...")
+        dataloader = get_dataloader(tokenizer, batch_size=args.batch_size)
+        benchmark(target_model, draft_model, tokenizer, dataloader, args)
+    else:
+        interactive_mode(target_model, draft_model, tokenizer, args)
