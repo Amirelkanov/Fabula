@@ -1,6 +1,4 @@
 import time
-import torch
-import os
 import statistics
 from sampling import autoregressive_sampling, speculative_sampling
 
@@ -57,7 +55,7 @@ def interactive_mode(target_model, draft_model, tokenizer, args):
 
 
 
-
+# TODO
 def benchmark(target_model, draft_model, tokenizer, dataloader, args):
     print("\n===== Running Benchmark =====")
     auto_latencies = []
@@ -74,8 +72,7 @@ def benchmark(target_model, draft_model, tokenizer, dataloader, args):
             
         sample_count += 1
         input_ids = batch['input_ids'].to(args.device)
-        attention_mask = batch['attention_mask'].to(args.device)
-        
+
         start_time = time.time()
         auto_output = autoregressive_sampling(
             target_model, 
@@ -85,12 +82,11 @@ def benchmark(target_model, draft_model, tokenizer, dataloader, args):
         )
         auto_time = time.time() - start_time
         auto_tokens_generated = auto_output.shape[1] - input_ids.shape[1]
-        auto_throughput = auto_tokens_generated / auto_time  # tokens per second
+        auto_throughput = auto_tokens_generated / auto_time  
         
         auto_latencies.append(auto_time)
         auto_throughputs.append(auto_throughput)
         
-        # Speculative sampling
         start_time = time.time()
         spec_output = speculative_sampling(
             target_model, 
