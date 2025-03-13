@@ -13,15 +13,15 @@ class GenerationMetrics(Metric):
         self.add_state("max_latency", default=torch.tensor(0.0), dist_reduce_fx="max")
         
     def update(self, latency, tokens_generated):
-        latency = torch.tensor(latency, device=self.total_latency.device)
-        tokens = torch.tensor(tokens_generated, device=self.total_tokens.device)
+        upd_latency = torch.tensor(latency, device=self.total_latency.device)
+        upd_tokens = torch.tensor(tokens_generated, device=self.total_tokens.device)
         
-        self.total_latency += latency
-        self.total_tokens += tokens
+        self.total_latency += upd_latency
+        self.total_tokens += upd_tokens
         self.num_generations += 1
         
-        self.min_latency = torch.min(self.min_latency, latency)
-        self.max_latency = torch.max(self.max_latency, latency)
+        self.min_latency = torch.min(self.min_latency, upd_latency)
+        self.max_latency = torch.max(self.max_latency, upd_latency)
     
     def compute(self):
         if self.num_generations == 0:

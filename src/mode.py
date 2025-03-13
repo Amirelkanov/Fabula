@@ -55,7 +55,7 @@ def interactive_mode(target_model, draft_model, tokenizer, args):
         print("\nInterrupt received, exiting...")
 
 def benchmark_mode(target_model, draft_model, tokenizer, args):
-    print(f"\nRunning benchmark with {args.num_batches} batches, batch size {args.batch_size}")
+    print(f"\nRunning benchmark with {args.num_batches} batches, batch size {args.batch_size}, seed: {args.seed}.")
     
     print("Loading dataset...")
     data_module = WikiTextV2Dataset(min_len=args.min_prompt_len, max_len=args.max_prompt_len, batch_size=args.batch_size)
@@ -65,6 +65,11 @@ def benchmark_mode(target_model, draft_model, tokenizer, args):
     auto_metrics, spec_metrics = GenerationMetrics(), GenerationMetrics()
 
     speedups = []
+    auto_latencies = []
+    spec_latencies = []
+    auto_throughputs = []
+    spec_throughputs = []
+    
     print("Starting benchmark...")
     for batch in tqdm(range(args.num_batches)):
         batch = next(iter(test_loader))
@@ -86,6 +91,9 @@ def benchmark_mode(target_model, draft_model, tokenizer, args):
             auto_tokens_generated = auto_output.shape[1] - input_ids.shape[1]
             auto_metrics.update(auto_time, auto_tokens_generated)
             
+            auto_latencies.append(auto_time)
+            auto_throughputs.append(auto_tokens_generated / auto_time)
+            
             spec_output, spec_time = measure_generation_time(
                 speculative_sampling,
                 args.device,
@@ -99,6 +107,9 @@ def benchmark_mode(target_model, draft_model, tokenizer, args):
             
             spec_tokens_generated = spec_output.shape[1] - input_ids.shape[1]
             spec_metrics.update(spec_time, spec_tokens_generated)
+            
+            spec_latencies.append(spec_time)
+            spec_throughputs.append(spec_tokens_generated / spec_time)
             
             speedup = auto_time / spec_time
             speedups.append(speedup)
@@ -147,5 +158,9 @@ def benchmark_mode(target_model, draft_model, tokenizer, args):
         'auto_results': auto_results,
         'spec_results': spec_results,
         'overall_speedup': overall_speedup,
-        'speedups': speedups
+        'speedups': speedups,
+        'auto_latencies': auto_latencies,
+        'spec_latencies': spec_latencies,
+        'auto_throughputs': auto_throughputs,
+        'spec_throughputs': spec_throughputs
     }

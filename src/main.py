@@ -3,9 +3,9 @@ import torch
 import os
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from constants import TARGET_MODEL, DRAFT_MODEL
-from modes import interactive_mode
-from helpers import generate_results_plots_for_benchmark, set_seeds
-from modes import benchmark_mode
+from mode import interactive_mode, benchmark_mode
+from helpers import set_seeds
+from plots import generate_results_plots_for_benchmark
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
@@ -60,6 +60,6 @@ if __name__ == "__main__":
         results = benchmark_mode(target_model, draft_model, tokenizer, args)
         
         if args.plot_results:
-            generate_results_plots_for_benchmark(results)   
+            generate_results_plots_for_benchmark(results, args.temperature)   
     else:
         interactive_mode(target_model, draft_model, tokenizer, args)
