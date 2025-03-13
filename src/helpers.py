@@ -6,7 +6,7 @@ import random
 import matplotlib.pyplot as plt
 import os
 
-def get_distribution(logits, temperature=1.0):
+def get_distribution(logits, temperature):
     if temperature <= EPS:
         # In deterministic mode create a one-hot distribution for the max logit
         max_indices = torch.argmax(logits, dim=-1, keepdim=True)
@@ -15,7 +15,7 @@ def get_distribution(logits, temperature=1.0):
     else: # Regular softmax with temperature
         return F.softmax(logits / temperature, dim=-1)
 
-def sample_from_logits(logits, temperature=1.0):
+def sample_from_logits(logits, temperature):
     # In deterministic mode just return the argmax directly
     if temperature <= EPS:
         return torch.argmax(logits, dim=-1)

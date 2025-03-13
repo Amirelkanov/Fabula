@@ -3,7 +3,7 @@ from constants import EPS
 from helpers import generate_draft_sequence, sample_from_logits, get_distribution, sample_from_residual_distribution
 
 @torch.no_grad()
-def autoregressive_sampling(model, initial_prompt_seq, target_len, temperature=1.0):
+def autoregressive_sampling(model, initial_prompt_seq, target_len, temperature):
     n = initial_prompt_seq.shape[1]
     result_seq = initial_prompt_seq.detach().clone()
     
@@ -17,7 +17,7 @@ def autoregressive_sampling(model, initial_prompt_seq, target_len, temperature=1
 
 
 @torch.no_grad()
-def speculative_sampling(target_model, draft_model, initial_prompt_seq, target_len, lookahead_k=4, temperature=1.0):
+def speculative_sampling(target_model, draft_model, initial_prompt_seq, target_len, temperature, lookahead_k=4):
     n = initial_prompt_seq.shape[1]
     result_seq = initial_prompt_seq.detach().clone()
     device = initial_prompt_seq.device
