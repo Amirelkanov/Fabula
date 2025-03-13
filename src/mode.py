@@ -65,10 +65,8 @@ def benchmark_mode(target_model, draft_model, tokenizer, args):
     auto_metrics, spec_metrics = GenerationMetrics(), GenerationMetrics()
 
     speedups = []
-    auto_latencies = []
-    spec_latencies = []
-    auto_throughputs = []
-    spec_throughputs = []
+    auto_latencies, auto_throughputs = [], []
+    spec_latencies, spec_throughputs = [], []
     
     print("Starting benchmark...")
     for batch in tqdm(range(args.num_batches)):
@@ -114,13 +112,9 @@ def benchmark_mode(target_model, draft_model, tokenizer, args):
             speedup = auto_time / spec_time
             speedups.append(speedup)
     
-    auto_results = auto_metrics.compute()
-    spec_results = spec_metrics.compute()
+    auto_results, spec_results = auto_metrics.compute(), spec_metrics.compute()
     
     overall_speedup = auto_results["avg_latency"] / spec_results["avg_latency"]
-    speedup_std = np.std(speedups)
-    speedup_min = np.min(speedups)
-    speedup_max = np.max(speedups)
     
     print("\n" + "="*50)
     print("BENCHMARK RESULTS")
@@ -145,9 +139,9 @@ def benchmark_mode(target_model, draft_model, tokenizer, args):
     print(f"  Speedup statistics:")
     print(f"    Mean: {np.mean(speedups):.2f}x")
     print(f"    Median: {np.median(speedups):.2f}x")
-    print(f"    Std Dev: {speedup_std:.2f}")
-    print(f"    Min: {speedup_min:.2f}x")
-    print(f"    Max: {speedup_max:.2f}x")
+    print(f"    Std Dev: {np.std(speedups):.2f}")
+    print(f"    Min: {np.min(speedups):.2f}x")
+    print(f"    Max: {np.max(speedups):.2f}x")
     
     throughput_improvement = ((spec_results['throughput'] / auto_results['throughput']) - 1) * 100
     print(f"  Throughput improvement: {throughput_improvement:.2f}%")
