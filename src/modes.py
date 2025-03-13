@@ -1,59 +1,60 @@
-import time
-import statistics
 from sampling import autoregressive_sampling, speculative_sampling
+from helpers import show_results_and_update_metrics
+
+import time
+
+import time
+from metrics import GenerationMetrics, measure_generation_time
 
 
 def interactive_mode(target_model, draft_model, tokenizer, args):
     print("\n===== Interactive Mode =====")
-    print("Enter a prompt (or type 'exit' to quit):")
+    print("Enter a prompt (type 'exit' or press CTRL+C to quit):")
     
-    while True:
-        prompt_text = input("> ")
-        if prompt_text.lower() == 'exit':
-            break
-        
-        input_ids = tokenizer.encode(prompt_text, return_tensors="pt").to(args.device)
-        
-        print("\nRunning autoregressive sampling...")
-        start_time = time.time()
-        auto_output = autoregressive_sampling(
-            target_model, 
-            input_ids, 
-            args.max_tokens + input_ids.shape[1],
-            temperature=args.temperature
-        )
-        auto_time = time.time() - start_time
-        auto_tokens_generated = auto_output.shape[1] - input_ids.shape[1]
-        auto_throughput = auto_tokens_generated / auto_time
-        
-        auto_text = tokenizer.decode(auto_output[0], skip_special_tokens=True)
-        print("\nAutoregressive Output:")
-        print(auto_text)
-        print(f"\nLatency: {auto_time:.4f} seconds")
-        print(f"Throughput: {auto_throughput:.2f} tokens/second")
-        
-        print("\nRunning speculative sampling...")
-        start_time = time.time()
-        spec_output = speculative_sampling(
-            target_model, 
-            draft_model, 
-            input_ids, 
-            args.max_tokens + input_ids.shape[1],
-            lookahead_k=args.lookahead_k,
-            temperature=args.temperature
-        )
-        spec_time = time.time() - start_time
-        spec_tokens_generated = spec_output.shape[1] - input_ids.shape[1]
-        spec_throughput = spec_tokens_generated / spec_time
-        
-        spec_text = tokenizer.decode(spec_output[0], skip_special_tokens=True)
-        print("\nSpeculative Output:")
-        print(spec_text)
-        print(f"\nLatency: {spec_time:.4f} seconds")
-        print(f"Throughput: {spec_throughput:.2f} tokens/second")
-        print(f"Speedup: {auto_time/spec_time:.2f}x")
-
-
+    auto_metrics, spec_metrics = GenerationMetrics(), GenerationMetrics()
+    
+    try:
+        while True:
+            prompt_text = input("> ")
+            if prompt_text.lower() == 'exit':
+                break
+            
+            input_ids = tokenizer.encode(prompt_text, return_tensors="pt").to(args.device)
+            
+            print("\nRunning autoregressive sampling...")
+            auto_output, auto_time = measure_generation_time(
+                autoregressive_sampling,
+                args.device,
+                target_model, 
+                input_ids, 
+                args.max_tokens + input_ids.shape[1],
+                temperature=args.temperature
+            )
+            
+            show_results_and_update_metrics(
+                input_ids, auto_output, auto_time, auto_metrics, tokenizer
+            )
+            
+            print("\nRunning speculative sampling...")
+            spec_output, spec_time = measure_generation_time(
+                speculative_sampling,
+                args.device,
+                target_model, 
+                draft_model, 
+                input_ids, 
+                args.max_tokens + input_ids.shape[1],
+                lookahead_k=args.lookahead_k,
+                temperature=args.temperature
+            )
+            
+            show_results_and_update_metrics(
+                input_ids, spec_output, spec_time, spec_metrics, tokenizer
+            )
+            
+            print(f"Speedup: {(auto_time / spec_time):.2f}x")
+    
+    except KeyboardInterrupt:
+        print("\nInterrupt received, exiting...")
 
 # TODO
 """def benchmark(target_model, draft_model, tokenizer, dataloader, args):

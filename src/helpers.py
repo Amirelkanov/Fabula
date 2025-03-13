@@ -56,3 +56,18 @@ def set_seeds(seed):
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
+    
+def show_results_and_update_metrics(
+    input_ids, output, sampling_time, metrics, tokenizer
+):
+    tokens_generated = output.shape[1] - input_ids.shape[1]
+    throughput = tokens_generated / sampling_time
+
+    metrics.update(sampling_time, tokens_generated)
+    metrics_data = metrics.compute()
+
+    text = tokenizer.decode(output[0], skip_special_tokens=True)
+    print("\nOutput:")
+    print(text)
+    print(f"\nLatency: {sampling_time:.4f} seconds (avg: {metrics_data['avg_latency']:.4f})")
+    print(f"Throughput: {throughput:.2f} tokens/second (avg: {metrics_data['throughput']:.2f})")
