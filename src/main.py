@@ -3,8 +3,9 @@ import torch
 import os
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from constants import TARGET_MODEL, DRAFT_MODEL
-from modes import interactive_mode, benchmark
-from dataloader import get_dataloader
+from modes import interactive_mode
+import numpy as np
+import random
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
@@ -12,8 +13,8 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description='Speculative Sampling Demo')
     parser.add_argument('--temperature', type=float, default=1.0, 
                         help='Temperature for sampling (default: 1.0)')
-    parser.add_argument('--max_tokens', type=int, default=200, 
-                        help='Maximum number of tokens to generate (default: 200)')
+    parser.add_argument('--max_tokens', type=int, default=50, 
+                        help='Maximum number of tokens to generate (default: 50)')
     parser.add_argument('--seed', type=int, default=42, 
                         help='Random seed (default: 42)')
     parser.add_argument('--benchmark', action='store_true', 
@@ -31,9 +32,11 @@ def parse_arguments():
 if __name__ == "__main__":
     args = parse_arguments()
     
+    random.seed(args.seed)
+    np.random.seed(args.seed)
     torch.manual_seed(args.seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(args.seed)
+    torch.cuda.manual_seed(args.seed)
+    torch.cuda.manual_seed_all(args.seed)
     
     print(f"Running with arguments: {args}")
     print("Loading models...")
@@ -51,9 +54,4 @@ if __name__ == "__main__":
     tokenizer = AutoTokenizer.from_pretrained(TARGET_MODEL)
     print("Models loaded successfully.")
     
-    if args.benchmark:
-        print("Loading Shakespeare dataset from Hugging Face...")
-        dataloader = get_dataloader(tokenizer, batch_size=args.batch_size)
-        benchmark(target_model, draft_model, tokenizer, dataloader, args)
-    else:
-        interactive_mode(target_model, draft_model, tokenizer, args)
+    interactive_mode(target_model, draft_model, tokenizer, args)

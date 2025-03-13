@@ -56,7 +56,7 @@ def interactive_mode(target_model, draft_model, tokenizer, args):
 
 
 # TODO
-def benchmark(target_model, draft_model, tokenizer, dataloader, args):
+"""def benchmark(target_model, draft_model, tokenizer, dataloader, args):
     print("\n===== Running Benchmark =====")
     auto_latencies = []
     spec_latencies = []
@@ -122,3 +122,4 @@ def benchmark(target_model, draft_model, tokenizer, dataloader, args):
     print(f"  Avg Latency: {statistics.mean(spec_latencies):.4f} seconds")
     print(f"  Avg Throughput: {statistics.mean(spec_throughputs):.2f} tokens/second")
     print(f"  Avg Speedup: {statistics.mean(auto_latencies)/statistics.mean(spec_latencies):.2f}x")
+"""

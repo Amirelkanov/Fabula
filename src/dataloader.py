@@ -1,7 +1,7 @@
 # dataloader.py
 from torch.utils.data import Dataset, DataLoader
 from datasets import load_dataset
-
+"""
 class ShakespeareDataset(Dataset):
     def __init__(self, tokenizer):
         self.tokenizer = tokenizer
@@ -21,4 +21,4 @@ class ShakespeareDataset(Dataset):
 def get_dataloader(tokenizer, batch_size=1):
     dataset = ShakespeareDataset(tokenizer)
     print(f"Created Shakespeare dataset with {len(dataset)} samples")
-    return DataLoader(dataset, batch_size=batch_size, shuffle=False)
+    return DataLoader(dataset, batch_size=batch_size, shuffle=False)"""
