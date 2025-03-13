@@ -4,16 +4,15 @@ import os
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from constants import TARGET_MODEL, DRAFT_MODEL
 from modes import interactive_mode
-import numpy as np
-from helpers import set_seeds
-import random
+from helpers import generate_results_plots_for_benchmark, set_seeds
+from modes import benchmark_mode
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Speculative Sampling Demo')
-    parser.add_argument('--temperature', type=float, default=1.0, 
-                        help='Temperature for sampling (default: 1.0)')
+    parser.add_argument('--temperature', type=float, default=0.0, 
+                        help='Temperature for sampling (default: 0.0)')
     parser.add_argument('--max_tokens', type=int, default=50, 
                         help='Maximum number of tokens to generate (default: 50)')
     parser.add_argument('--seed', type=int, default=42, 
@@ -24,10 +23,17 @@ def parse_arguments():
                         help='Device to run on (default: cuda:4 or cpu if CUDA not available)')
     parser.add_argument('--lookahead_k', type=int, default=4, 
                         help='Number of tokens to lookahead in speculative sampling (default: 4)')
-    parser.add_argument('--batch_size', type=int, default=1, 
-                        help='Batch size for benchmark mode (default: 1)')
-    parser.add_argument('--num_samples', type=int, default=10, 
-                        help='Number of samples to use for benchmarking (default: 10)')
+    
+    parser.add_argument('--batch_size', type=int, default=8, 
+                        help='Batch size for benchmark mode (default: 8)')
+    parser.add_argument('--min_prompt_len', type=int, default=5, 
+                        help='Batch size for benchmark mode (default: 5)')
+    parser.add_argument('--max_prompt_len', type=int, default=50, 
+                        help='Batch size for benchmark mode (default: 50)')
+    parser.add_argument('--num_batches', type=int, default=10, 
+                        help='Number of batches to use for benchmark mode (default: 10)')
+    parser.add_argument('--plot_results', action='store_true',
+                        help='Generate plots of benchmark results')
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -50,4 +56,10 @@ if __name__ == "__main__":
     tokenizer = AutoTokenizer.from_pretrained(TARGET_MODEL)
     print("Models loaded successfully.")
     
-    interactive_mode(target_model, draft_model, tokenizer, args)
+    if args.benchmark:
+        results = benchmark_mode(target_model, draft_model, tokenizer, args)
+        
+        if args.plot_results:
+            generate_results_plots_for_benchmark(results)   
+    else:
+        interactive_mode(target_model, draft_model, tokenizer, args)

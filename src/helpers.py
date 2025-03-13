@@ -3,6 +3,8 @@ from constants import EPS
 import torch.nn.functional as F
 import numpy as np
 import random
+import matplotlib.pyplot as plt
+import os
 
 def get_distribution(logits, temperature=1.0):
     if temperature <= EPS:
@@ -71,3 +73,46 @@ def show_results_and_update_metrics(
     print(text)
     print(f"\nLatency: {sampling_time:.4f} seconds (avg: {metrics_data['avg_latency']:.4f})")
     print(f"Throughput: {throughput:.2f} tokens/second (avg: {metrics_data['throughput']:.2f})")
+
+def generate_results_plots_for_benchmark(results):
+    plots_dir = "benchmark_plots"
+    os.makedirs(plots_dir, exist_ok=True)
+    
+    plt.figure(figsize=(10, 6))
+    plt.hist(results['speedups'], bins=15, alpha=0.7, color='blue')
+    plt.axvline(results['overall_speedup'], color='red', linestyle='dashed', linewidth=2, label=f'Overall: {results["overall_speedup"]:.2f}x')
+    plt.title('Speculative Sampling Speedup Distribution')
+    plt.xlabel('Speedup (x times)')
+    plt.ylabel('Frequency')
+    plt.grid(True, alpha=0.3)
+    plt.legend()
+    plt.savefig(f"{plots_dir}/speedup_distribution.png")
+    
+    plt.figure(figsize=(10, 6))
+    methods = ['Autoregressive', 'Speculative']
+    latencies = [
+        results['auto_results']['avg_latency'].item(), 
+        results['spec_results']['avg_latency'].item()
+    ]
+    plt.bar(methods, latencies, color=['blue', 'green'])
+    plt.title('Average Latency Comparison')
+    plt.ylabel('Latency (seconds)')
+    plt.grid(axis='y', alpha=0.3)
+    for i, v in enumerate(latencies):
+        plt.text(i, v + 0.01, f"{v:.4f}s", ha='center', fontweight='bold')
+    plt.savefig(f"{plots_dir}/latency_comparison.png")
+    
+    plt.figure(figsize=(10, 6))
+    throughputs = [
+        results['auto_results']['throughput'].item(), 
+        results['spec_results']['throughput'].item()
+    ]
+    plt.bar(methods, throughputs, color=['blue', 'green'])
+    plt.title('Throughput Comparison')
+    plt.ylabel('Throughput (tokens/second)')
+    plt.grid(axis='y', alpha=0.3)
+    for i, v in enumerate(throughputs):
+        plt.text(i, v + 0.5, f"{v:.2f}", ha='center', fontweight='bold')
+    plt.savefig(f"{plots_dir}/throughput_comparison.png")
+    
+    print(f"Plots saved to {plots_dir}/")
