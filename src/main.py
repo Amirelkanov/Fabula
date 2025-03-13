@@ -5,6 +5,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from constants import TARGET_MODEL, DRAFT_MODEL
 from modes import interactive_mode
 import numpy as np
+from helpers import set_seeds
 import random
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
@@ -31,12 +32,7 @@ def parse_arguments():
 
 if __name__ == "__main__":
     args = parse_arguments()
-    
-    random.seed(args.seed)
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
-    torch.cuda.manual_seed(args.seed)
-    torch.cuda.manual_seed_all(args.seed)
+    set_seeds(args.seed)
     
     print(f"Running with arguments: {args}")
     print("Loading models...")
