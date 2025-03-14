@@ -2,12 +2,11 @@ import torch
 import lightning as L
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from torch.nn import functional as F
-from constants import DRAFT_MODEL, EPS, TARGET_MODEL
+from constants import CUDA_DEVICE, DRAFT_MODEL, EPS, TARGET_MODEL
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from datamodule import WikiTextV2Datamodule
 import os
 from lightning.pytorch.callbacks import ModelCheckpoint
-from lightning.pytorch.loggers import TensorBoardLogger
 import torch
 import lightning as L
 
@@ -65,14 +64,13 @@ class Lit(L.LightningModule):
 if __name__ == "__main__":
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     torch.set_float32_matmul_precision('medium')
-    device = "cuda:4"
-
-    #target_model = AutoModelForCausalLM.from_pretrained("facebook/opt-1.3b").to(device)
+    
+    #target_model = AutoModelForCausalLM.from_pretrained("facebook/opt-1.3b").to(CUDA_DEVICE)
     #target_model_tokenizer = AutoTokenizer.from_pretrained("facebook/opt-1.3b")
-    #draft_model = AutoModelForCausalLM.from_pretrained("facebook/opt-125m").to(device)
-    target_model = AutoModelForCausalLM.from_pretrained(TARGET_MODEL, torch_dtype=torch.float16).to(device)
+    #draft_model = AutoModelForCausalLM.from_pretrained("facebook/opt-125m").to(CUDA_DEVICE)
+    target_model = AutoModelForCausalLM.from_pretrained(TARGET_MODEL, torch_dtype=torch.float16).to(CUDA_DEVICE)
     target_model_tokenizer = AutoTokenizer.from_pretrained(TARGET_MODEL)
-    draft_model = AutoModelForCausalLM.from_pretrained(DRAFT_MODEL, torch_dtype=torch.float16).to(device)
+    draft_model = AutoModelForCausalLM.from_pretrained(DRAFT_MODEL, torch_dtype=torch.float16).to(CUDA_DEVICE)
     
     callbacks = [
         ModelCheckpoint(monitor="val_loss", mode="min", save_top_k=1, save_last=False),
@@ -80,18 +78,19 @@ if __name__ == "__main__":
     
     datamodule = WikiTextV2Datamodule(
         min_len=5,  
-        max_len=50,
+        max_len=100,
         target_model=target_model,
         target_model_tokenizer=target_model_tokenizer,
-        device=device,
+        device=CUDA_DEVICE,
         batch_size=1, 
-        check_cache=False
+        check_cache=False,
+        num_workers=25
     )
 
     trainer = L.Trainer(
         accelerator="gpu", max_epochs=5, 
         limit_train_batches=None,
-        logger=TensorBoardLogger(save_dir="."),
+        logger=False,
         devices=[4],
         callbacks=callbacks
     )

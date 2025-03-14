@@ -1,11 +1,13 @@
 from lightning.pytorch.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
 import lightning as L
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 from datasets import load_dataset
 import os
 import torch
 from tqdm import tqdm
 from torch.nn.utils.rnn import pad_sequence
+
+from constants import CUDA_DEVICE
 
 def collate_fn(batch, target_model = None):
     if target_model is not None:
@@ -19,7 +21,7 @@ def collate_fn(batch, target_model = None):
     return torch.utils.data.default_collate(batch)
 
 class WikiTextV2Datamodule(L.LightningDataModule):
-    def __init__(self, min_len: int, max_len: int, target_model = None, target_model_tokenizer = None, device="cuda:4", num_workers: int = 0, batch_size: int = 16, check_cache=True) -> None:
+    def __init__(self, min_len: int, max_len: int, target_model = None, target_model_tokenizer = None, device=CUDA_DEVICE, num_workers: int = 0, batch_size: int = 16, check_cache=True) -> None:
         super().__init__()
         self.batch_size = batch_size
         self.min_len = min_len 

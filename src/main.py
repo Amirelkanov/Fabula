@@ -3,7 +3,7 @@ import torch
 import os
 import lightning as L
 from transformers import AutoTokenizer, AutoModelForCausalLM
-from constants import TARGET_MODEL, DRAFT_MODEL
+from constants import CUDA_DEVICE, SMALL_DRAFT_MODEL, SMALL_TARGET_MODEL, TARGET_MODEL, DRAFT_MODEL
 from mode import interactive_mode, benchmark_mode
 from plots import generate_results_plots_for_benchmark
 from finetune_draft_model import DraftModelFinetuner
@@ -20,8 +20,8 @@ def parse_arguments():
                         help='Random seed (default: 42)')
     parser.add_argument('--benchmark', action='store_true', 
                         help='Run in benchmark mode')
-    parser.add_argument('--device', type=str, default='cuda:4' if torch.cuda.is_available() else 'cpu', 
-                        help='Device to run on (default: cuda:4 or cpu if CUDA not available)')
+    parser.add_argument('--device', type=str, default=CUDA_DEVICE if torch.cuda.is_available() else 'cpu', 
+                        help=f"Device to run on (default: {CUDA_DEVICE} or cpu if CUDA not available)")
     parser.add_argument('--lookahead_k', type=int, default=4, 
                         help='Number of tokens to lookahead in speculative sampling (default: 4)')
     
@@ -45,20 +45,20 @@ if __name__ == "__main__":
     print("Loading models...")
     
     target_model = AutoModelForCausalLM.from_pretrained(
-        "facebook/opt-1.3b", 
+        SMALL_TARGET_MODEL, 
         torch_dtype=torch.float16
     ).to(args.device)
     
     draft_model = AutoModelForCausalLM.from_pretrained(
-        "facebook/opt-125m", 
+        SMALL_DRAFT_MODEL, 
         torch_dtype=torch.float16
     ).to(args.device)
     
-    #target_model = AutoModelForCausalLM.from_pretrained("facebook/opt-1.3b").to(args.device)
+    #target_model = AutoModelForCausalLM.from_pretrained(SMALL_TARGET_MODEL).to(args.device)
     #finetuned_model = DraftModelFinetuner.load_from_checkpoint("checkpoints/epoch=4-step=32775.ckpt")
     #draft_model = finetuned_model.draft_model
     
-    tokenizer = AutoTokenizer.from_pretrained(TARGET_MODEL)
+    tokenizer = AutoTokenizer.from_pretrained(SMALL_TARGET_MODEL)
     print("Models loaded successfully.")
     
     if args.benchmark:
