@@ -49,14 +49,13 @@ if __name__ == "__main__":
         torch_dtype=torch.float16
     ).to(args.device)
     
-    finetuned_model = DraftModelFinetuner.load_from_checkpoint("src/checkpoints/epoch=2-step=15474.ckpt")
-   
-    """draft_model = AutoModelForCausalLM.from_pretrained(
+    draft_model = AutoModelForCausalLM.from_pretrained(
         DRAFT_MODEL, 
         torch_dtype=torch.float16
-    ).to(args.device)"""
+    ).to(args.device)
     
-    draft_model = finetuned_model.draft_model
+    # finetuned_model = DraftModelFinetuner.load_from_checkpoint("src/checkpoints/epoch=2-step=15474.ckpt")
+    # draft_model = finetuned_model.draft_model
     
     tokenizer = AutoTokenizer.from_pretrained(TARGET_MODEL)
     print("Models loaded successfully.")
