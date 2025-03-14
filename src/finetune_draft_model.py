@@ -4,6 +4,12 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from torch.optim import AdamW
 from torch.nn import functional as F
 from constants import TARGET_MODEL, DRAFT_MODEL
+from transformers import AutoModelForCausalLM, AutoTokenizer, AdamW
+from datamodule import WikiTextV2Datamodule
+import os
+from constants import TARGET_MODEL, DRAFT_MODEL
+import torch
+import lightning as L
 
 
 class DraftModelFinetuner(L.LightningModule):
@@ -67,3 +73,37 @@ class DraftModelFinetuner(L.LightningModule):
             "optimizer": optimizer,
             "lr_scheduler": lr_scheduler
         }
+
+
+if __name__ == "__main__":
+   
+    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    device = "cuda:4"
+
+    #target_model = AutoModelForCausalLM.from_pretrained("facebook/opt-1.3b").to(device)
+    #draft_model = AutoModelForCausalLM.from_pretrained("facebook/opt-125m").to(device)
+    target_model = AutoModelForCausalLM.from_pretrained(TARGET_MODEL, torch_dtype=torch.float16).to(device)
+    draft_model = AutoModelForCausalLM.from_pretrained(DRAFT_MODEL, torch_dtype=torch.float16).to(device)
+    target_model.eval()
+    draft_model.train()
+    
+    datamodule = WikiTextV2Datamodule(
+        min_len=5,  
+        max_len=100,
+        target_model=target_model,
+        device=device,
+        batch_size=1, 
+    )
+    datamodule.setup(stage="fit")
+    torch.set_float32_matmul_precision('medium')
+
+    trainer = L.Trainer(
+        accelerator="gpu", max_epochs=1, 
+        precision=16,
+        limit_train_batches=None,
+        logger=False, # TensorBoardLogger(save_dir=".")
+        devices=[4] 
+    )
+
+    finetuner = DraftModelFinetuner()
+    trainer.fit(model=finetuner, datamodule=datamodule)
