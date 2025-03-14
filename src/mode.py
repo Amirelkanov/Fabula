@@ -1,7 +1,7 @@
 from sampling import autoregressive_sampling, speculative_sampling
 from helpers import show_results_and_update_metrics
 from metrics import GenerationMetrics, measure_generation_time
-from dataset import WikiTextV2Dataset
+from datamodule import WikiTextV2Datamodule
 from tqdm import tqdm
 import numpy as np
     
@@ -58,7 +58,7 @@ def benchmark_mode(target_model, draft_model, tokenizer, args):
     print(f"\nRunning benchmark with {args.num_batches} batches, batch size {args.batch_size}, seed: {args.seed}.")
     
     print("Loading dataset...")
-    data_module = WikiTextV2Dataset(min_len=args.min_prompt_len, max_len=args.max_prompt_len, batch_size=args.batch_size)
+    data_module = WikiTextV2Datamodule(min_len=args.min_prompt_len, max_len=args.max_prompt_len, batch_size=args.batch_size)
     data_module.setup("test")
     test_loader = data_module.test_dataloader()
     

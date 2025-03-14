@@ -51,13 +51,6 @@ def sample_from_residual_distribution(target_dist, draft_dist):
         # Fallback if numerical issues occur
         return torch.multinomial(target_dist, num_samples=1)
 
-def set_seeds(seed):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    
 def show_results_and_update_metrics(
     input_ids, output, sampling_time, metrics, tokenizer
 ):

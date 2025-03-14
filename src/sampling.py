@@ -12,7 +12,6 @@ def autoregressive_sampling(model, initial_prompt_seq, target_len, temperature):
         sample_token = sample_from_logits(sample_token_logits, temperature).unsqueeze(-1)
         result_seq = torch.cat([result_seq, sample_token], dim=1)
         n += 1
-        
     return result_seq
 
 
@@ -27,8 +26,7 @@ def speculative_sampling(target_model, draft_model, initial_prompt_seq, target_l
             draft_model, result_seq, lookahead_k, temperature
         )
         
-        target_outputs = target_model(draft_seq)
-        target_logits = target_outputs.logits
+        target_logits = target_model(draft_seq).logits
         
         # Starting position for target logits evaluation (the position before the first draft token)
         start_pos = result_seq.shape[1] - 1

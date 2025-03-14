@@ -1,3 +1,7 @@
 .venv
 *__pycache__
 benchmark_plots/*
+lightning_logs/
+data
+checkpoints
+model.pt

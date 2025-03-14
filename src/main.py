@@ -1,11 +1,12 @@
 import argparse
 import torch
 import os
+import lightning as L
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from constants import TARGET_MODEL, DRAFT_MODEL
 from mode import interactive_mode, benchmark_mode
-from helpers import set_seeds
 from plots import generate_results_plots_for_benchmark
+from finetune_draft_model import DraftModelFinetuner
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
@@ -38,7 +39,7 @@ def parse_arguments():
 
 if __name__ == "__main__":
     args = parse_arguments()
-    set_seeds(args.seed)
+    L.seed_everything(args.seed)
     
     print(f"Running with arguments: {args}")
     print("Loading models...")
@@ -48,10 +49,14 @@ if __name__ == "__main__":
         torch_dtype=torch.float16
     ).to(args.device)
     
-    draft_model = AutoModelForCausalLM.from_pretrained(
+    finetuned_model = DraftModelFinetuner.load_from_checkpoint("src/checkpoints/epoch=2-step=15474.ckpt")
+   
+    """draft_model = AutoModelForCausalLM.from_pretrained(
         DRAFT_MODEL, 
         torch_dtype=torch.float16
-    ).to(args.device)
+    ).to(args.device)"""
+    
+    draft_model = finetuned_model.draft_model
     
     tokenizer = AutoTokenizer.from_pretrained(TARGET_MODEL)
     print("Models loaded successfully.")
