@@ -23,10 +23,10 @@ class Lit(L.LightningModule):
     def training_step(self, batch, batch_idx):
         input_ids = batch["input_ids"]
         target_logits = batch["logits"]
-    
+        
         draft_logits = self.draft_model(input_ids).logits
-        log_draft_probs = F.log_softmax(draft_logits + EPS, dim=-1)
-        target_probs = F.softmax(target_logits + EPS, dim=-1)    
+        log_draft_probs = F.log_softmax(draft_logits, dim=-1)
+        target_probs = F.softmax(target_logits, dim=-1)    
         
         loss = F.kl_div(log_draft_probs, target_probs, reduction='batchmean')
         self.log("train_loss", loss, prog_bar=True)
@@ -37,8 +37,8 @@ class Lit(L.LightningModule):
         target_logits = batch["logits"]
     
         draft_logits = self.draft_model(input_ids).logits
-        log_draft_probs = F.log_softmax(draft_logits + EPS, dim=-1)
-        target_probs = F.softmax(target_logits + EPS, dim=-1)    
+        log_draft_probs = F.log_softmax(draft_logits, dim=-1)
+        target_probs = F.softmax(target_logits, dim=-1)
         
         loss = F.kl_div(log_draft_probs, target_probs, reduction='batchmean')
         self.log("val_loss", loss, prog_bar=True)
@@ -63,8 +63,9 @@ class Lit(L.LightningModule):
 
 if __name__ == "__main__":
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    os.environ["TOKENIZERS_PARALLELISM"] = "false"
     torch.set_float32_matmul_precision('medium')
-    
+
     #target_model = AutoModelForCausalLM.from_pretrained("facebook/opt-1.3b").to(CUDA_DEVICE)
     #target_model_tokenizer = AutoTokenizer.from_pretrained("facebook/opt-1.3b")
     #draft_model = AutoModelForCausalLM.from_pretrained("facebook/opt-125m").to(CUDA_DEVICE)
@@ -78,7 +79,7 @@ if __name__ == "__main__":
     
     datamodule = WikiTextV2Datamodule(
         min_len=5,  
-        max_len=100,
+        max_len=35,
         target_model=target_model,
         target_model_tokenizer=target_model_tokenizer,
         device=CUDA_DEVICE,

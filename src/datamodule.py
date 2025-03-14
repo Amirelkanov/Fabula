@@ -9,15 +9,24 @@ from torch.nn.utils.rnn import pad_sequence
 
 from constants import CUDA_DEVICE
 
-def collate_fn(batch, target_model = None):
+def collate_fn(batch, target_model=None, tokenizer=None):
     if target_model is not None:
-        input_ids_padded = pad_sequence([item["input_ids"] for item in batch], batch_first=True, padding_value=0)
-        logits_list = [item["logits"].squeeze(0) for item in batch]
-        logits_padded = pad_sequence(logits_list, batch_first=True, padding_value=0)
+        if tokenizer is None:
+            raise Exception("You should provide tokenizer too!")
+        input_ids_padded = pad_sequence(
+            [item["input_ids"] for item in batch],
+            batch_first=True,
+            padding_value=tokenizer.pad_token_id if tokenizer.pad_token_id is not None else tokenizer.eos_token_id
+        )
+        logits_padded = pad_sequence(
+            [item["logits"].squeeze(0) for item in batch],
+            batch_first=True,
+            padding_value=0
+        )
         return {
             "input_ids": input_ids_padded,
             "logits": logits_padded
-        } 
+        }
     return torch.utils.data.default_collate(batch)
 
 class WikiTextV2Datamodule(L.LightningDataModule):
@@ -51,7 +60,7 @@ class WikiTextV2Datamodule(L.LightningDataModule):
             batch_size=self.batch_size,
             shuffle=True,
             num_workers=self.num_workers,
-            collate_fn=lambda batch: collate_fn(batch, self.target_model),
+            collate_fn=lambda batch: collate_fn(batch, self.target_model, self.target_model_tokenizer)
         )
 
     def val_dataloader(self) -> EVAL_DATALOADERS:
@@ -60,7 +69,7 @@ class WikiTextV2Datamodule(L.LightningDataModule):
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=self.num_workers,
-            collate_fn=lambda batch: collate_fn(batch, self.target_model),
+            collate_fn=lambda batch: collate_fn(batch, self.target_model, self.target_model_tokenizer)
         )
     
     def prepare_dataset_for_draft_model_finetuning(self):
@@ -82,7 +91,7 @@ class WikiTextV2Datamodule(L.LightningDataModule):
                     
                     tokenized_input = self.target_model_tokenizer(input_text, return_tensors="pt").to(self.device)
                     with torch.no_grad():
-                        logits = self.target_model(tokenized_input.input_ids[0]).logits   
+                        logits = self.target_model(tokenized_input.input_ids[0]).logits
                     processed_data.append({
                         "input_ids": tokenized_input.input_ids[0].cpu(),
                         "logits": logits.cpu()
@@ -100,4 +109,4 @@ class WikiTextV2Datamodule(L.LightningDataModule):
 
     @staticmethod
     def filter_dataset(dataset, min_len: int, max_len: int) -> list[dict[str, str]]:
-        return dataset.filter(lambda row: min_len < len(row["text"].split()) <= max_len)
+        return dataset.filter(lambda row: min_len <= len(row["text"].split()) <= max_len)
