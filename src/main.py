@@ -45,17 +45,18 @@ if __name__ == "__main__":
     print("Loading models...")
     
     target_model = AutoModelForCausalLM.from_pretrained(
-        TARGET_MODEL, 
+        "facebook/opt-1.3b", 
         torch_dtype=torch.float16
     ).to(args.device)
     
     draft_model = AutoModelForCausalLM.from_pretrained(
-        DRAFT_MODEL, 
+        "facebook/opt-125m", 
         torch_dtype=torch.float16
     ).to(args.device)
     
-    # finetuned_model = DraftModelFinetuner.load_from_checkpoint("src/checkpoints/epoch=2-step=15474.ckpt")
-    # draft_model = finetuned_model.draft_model
+    #target_model = AutoModelForCausalLM.from_pretrained("facebook/opt-1.3b").to(args.device)
+    #finetuned_model = DraftModelFinetuner.load_from_checkpoint("checkpoints/epoch=4-step=32775.ckpt")
+    #draft_model = finetuned_model.draft_model
     
     tokenizer = AutoTokenizer.from_pretrained(TARGET_MODEL)
     print("Models loaded successfully.")

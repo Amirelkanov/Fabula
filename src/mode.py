@@ -60,7 +60,7 @@ def benchmark_mode(target_model, draft_model, tokenizer, args):
     print("Loading dataset...")
     data_module = WikiTextV2Datamodule(min_len=args.min_prompt_len, max_len=args.max_prompt_len, batch_size=args.batch_size)
     data_module.setup("test")
-    test_loader = data_module.test_dataloader()
+    val_loader = data_module.val_dataloader()
     
     auto_metrics, spec_metrics = GenerationMetrics(), GenerationMetrics()
 
@@ -70,7 +70,7 @@ def benchmark_mode(target_model, draft_model, tokenizer, args):
     
     print("Starting benchmark...")
     for batch in tqdm(range(args.num_batches)):
-        batch = next(iter(test_loader))
+        batch = next(iter(val_loader))
         texts = batch["text"]
         for text in texts:
             input_ids = tokenizer.encode(text, return_tensors="pt").to(args.device)
