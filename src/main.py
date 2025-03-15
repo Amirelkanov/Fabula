@@ -6,7 +6,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from constants import CUDA_DEVICE, SMALL_DRAFT_MODEL, SMALL_TARGET_MODEL, TARGET_MODEL, DRAFT_MODEL
 from mode import interactive_mode, benchmark_mode
 from plots import generate_results_plots_for_benchmark
-from finetune_draft_model import DraftModelFinetuner
+from finetune_draft_model import Lit
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
@@ -44,7 +44,7 @@ if __name__ == "__main__":
     print(f"Running with arguments: {args}")
     print("Loading models...")
     
-    target_model = AutoModelForCausalLM.from_pretrained(
+    """target_model = AutoModelForCausalLM.from_pretrained(
         SMALL_TARGET_MODEL, 
         torch_dtype=torch.float16
     ).to(args.device)
@@ -52,11 +52,13 @@ if __name__ == "__main__":
     draft_model = AutoModelForCausalLM.from_pretrained(
         SMALL_DRAFT_MODEL, 
         torch_dtype=torch.float16
-    ).to(args.device)
+    ).to(args.device)"""
     
-    #target_model = AutoModelForCausalLM.from_pretrained(SMALL_TARGET_MODEL).to(args.device)
-    #finetuned_model = DraftModelFinetuner.load_from_checkpoint("checkpoints/epoch=4-step=32775.ckpt")
-    #draft_model = finetuned_model.draft_model
+    target_model = AutoModelForCausalLM.from_pretrained(SMALL_TARGET_MODEL).to(args.device)
+    
+    draft_model = AutoModelForCausalLM.from_pretrained(SMALL_DRAFT_MODEL).to(args.device)
+    #finetuned_model = Lit.load_from_checkpoint("checkpoints/epoch=9-step=11060.ckpt", draft_model=draft_model)
+    #draft_model = finetuned_model
     
     tokenizer = AutoTokenizer.from_pretrained(SMALL_TARGET_MODEL)
     print("Models loaded successfully.")

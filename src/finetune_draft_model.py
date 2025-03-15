@@ -4,6 +4,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from torch.nn import functional as F
 from constants import CUDA_DEVICE, DRAFT_MODEL, EPS, TARGET_MODEL
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers.optimization import Adafactor, AdafactorSchedule
 from datamodule import WikiTextV2Datamodule
 import os
 from lightning.pytorch.callbacks import ModelCheckpoint
@@ -12,14 +13,18 @@ import lightning as L
 
 class Lit(L.LightningModule):
     def __init__(
-        self, draft_model, learning_rate=5e-5, weight_decay=0.01,
+        self, draft_model, learning_rate=1e-6, weight_decay=0.01,
     ):
         super().__init__()
         self.save_hyperparameters(ignore=['draft_model'])
         self.draft_model = draft_model
+        self.draft_model.train()
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
-
+    
+    def forward(self, *args, **kwargs):
+        return self.draft_model(*args, **kwargs)
+    
     def training_step(self, batch, batch_idx):
         input_ids = batch["input_ids"]
         target_logits = batch["logits"]
@@ -79,22 +84,22 @@ if __name__ == "__main__":
     
     datamodule = WikiTextV2Datamodule(
         min_len=5,  
-        max_len=35,
+        max_len=70,
         target_model=target_model,
         target_model_tokenizer=target_model_tokenizer,
         device=CUDA_DEVICE,
-        batch_size=1, 
+        batch_size=8, 
         check_cache=False,
         num_workers=25
     )
 
     trainer = L.Trainer(
-        accelerator="gpu", max_epochs=5, 
+        accelerator="gpu", max_epochs=10, 
         limit_train_batches=None,
         logger=False,
-        devices=[4],
-        callbacks=callbacks
+        devices=[1],
+        callbacks=callbacks,
     )
 
-    fine_tuned_model = Lit(draft_model=draft_model)
+    fine_tuned_model = Lit(draft_model=draft_model, learning_rate=1e-6)
     trainer.fit(model=fine_tuned_model, datamodule=datamodule)
