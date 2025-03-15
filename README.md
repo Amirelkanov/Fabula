@@ -21,7 +21,7 @@ You can run model finetuning by:
 
 P.S. Careful with `CUDA_DEVICE` constant! Maybe you will need to change it.
 
-Results `(temperature = 0)`:
+Results with `TARGET_MODEL="facebook/opt-6.7b"`, `DRAFT_MODEL="facebook/opt-1.3b"`, `temperature = 0`:
 
 * With fine-tuning:
 ![](benchmark_plots/fine_tuned_latency_distributions.png)
