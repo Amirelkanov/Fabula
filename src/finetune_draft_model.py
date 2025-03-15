@@ -100,8 +100,7 @@ if __name__ == "__main__":
         target_model=target_model,
         target_model_tokenizer=target_model_tokenizer,
         device=CUDA_DEVICE,
-        batch_size=2, 
-        check_cache=True,
+        batch_size=2,
         num_workers=25
     )
 
