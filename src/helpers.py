@@ -2,8 +2,6 @@ import torch
 from constants import EPS
 import torch.nn.functional as F
 import numpy as np
-import random
-import numpy as np
 
 def get_distribution(logits, temperature):
     if temperature <= EPS:

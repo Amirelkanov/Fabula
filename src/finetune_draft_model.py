@@ -4,12 +4,12 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from torch.nn import functional as F
 from constants import CUDA_DEVICE, DRAFT_MODEL, EPS, TARGET_MODEL
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from transformers.optimization import Adafactor, AdafactorSchedule
 from datamodule import WikiTextV2Datamodule
 import os
 from lightning.pytorch.callbacks import ModelCheckpoint
 import torch
 import lightning as L
+from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 
 class Lit(L.LightningModule):
     def __init__(
@@ -65,39 +65,51 @@ class Lit(L.LightningModule):
             "lr_scheduler": lr_scheduler
         }
 
+def create_peft_config(model):
+    model.gradient_checkpointing_enable()
+    model.config.use_cache = False
+    
+    peft_config = LoraConfig(
+        r=16,
+        lora_alpha=32,
+        target_modules=["q_proj", "v_proj"],
+        lora_dropout=0.05,
+        bias="none",
+        task_type="CAUSAL_LM",
+    )
+
+    return get_peft_model(prepare_model_for_kbit_training(model), peft_config)
 
 if __name__ == "__main__":
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
     torch.set_float32_matmul_precision('medium')
+    L.seed_everything(42)
 
-    #target_model = AutoModelForCausalLM.from_pretrained("facebook/opt-1.3b").to(CUDA_DEVICE)
-    #target_model_tokenizer = AutoTokenizer.from_pretrained("facebook/opt-1.3b")
-    #draft_model = AutoModelForCausalLM.from_pretrained("facebook/opt-125m").to(CUDA_DEVICE)
-    target_model = AutoModelForCausalLM.from_pretrained(TARGET_MODEL, torch_dtype=torch.float16).to(CUDA_DEVICE)
+    target_model = AutoModelForCausalLM.from_pretrained(TARGET_MODEL).to(CUDA_DEVICE)
     target_model_tokenizer = AutoTokenizer.from_pretrained(TARGET_MODEL)
-    draft_model = AutoModelForCausalLM.from_pretrained(DRAFT_MODEL, torch_dtype=torch.float16).to(CUDA_DEVICE)
+    draft_model = create_peft_config(AutoModelForCausalLM.from_pretrained(DRAFT_MODEL).to(CUDA_DEVICE))
     
     callbacks = [
         ModelCheckpoint(monitor="val_loss", mode="min", save_top_k=1, save_last=False),
     ]
     
     datamodule = WikiTextV2Datamodule(
-        min_len=5,  
-        max_len=70,
+        min_len=50,  
+        max_len=175,
         target_model=target_model,
         target_model_tokenizer=target_model_tokenizer,
         device=CUDA_DEVICE,
-        batch_size=8, 
-        check_cache=False,
+        batch_size=2, 
+        check_cache=True,
         num_workers=25
     )
 
     trainer = L.Trainer(
-        accelerator="gpu", max_epochs=10, 
+        accelerator="gpu", max_epochs=15, 
         limit_train_batches=None,
         logger=False,
-        devices=[1],
+        devices=[int(CUDA_DEVICE.split(":")[-1])],
         callbacks=callbacks,
     )
 

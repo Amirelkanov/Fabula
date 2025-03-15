@@ -45,7 +45,7 @@ class WikiTextV2Datamodule(L.LightningDataModule):
         train_data = load_dataset("Salesforce/wikitext", "wikitext-2-v1", split="train")
         test_data = load_dataset("Salesforce/wikitext", "wikitext-2-v1", split="test")
         
-        # If model is not None, batch has structure {"text": [N strings]} where N is batchsize    
+        # If model is None, batch has structure {"text": [N strings]} where N is batchsize  
         self.train_dataset = self.filter_dataset(train_data, self.min_len, self.max_len)
         self.val_dataset = self.filter_dataset(test_data, self.min_len, self.max_len)
         
@@ -80,6 +80,7 @@ class WikiTextV2Datamodule(L.LightningDataModule):
         
         # Check if cache exists
         if self.check_cache and os.path.exists(train_cache_path) and os.path.exists(test_cache_path):
+            print("Previously cached data files detected. Loading...")
             self.train_dataset = torch.load(train_cache_path)
             self.val_dataset = torch.load(test_cache_path)
             print(f"Loaded preprocessed data from cache")
@@ -102,7 +103,6 @@ class WikiTextV2Datamodule(L.LightningDataModule):
             self.train_dataset = process_dataset(self.train_dataset, "Processing train dataset")
             self.val_dataset = process_dataset(self.val_dataset, "Processing test dataset")
             
-            # Save to cache
             torch.save(self.train_dataset, train_cache_path)
             torch.save(self.val_dataset, test_cache_path)
             print(f"Processed datasets and saved to cache")

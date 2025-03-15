@@ -44,23 +44,13 @@ if __name__ == "__main__":
     print(f"Running with arguments: {args}")
     print("Loading models...")
     
-    """target_model = AutoModelForCausalLM.from_pretrained(
-        SMALL_TARGET_MODEL, 
-        torch_dtype=torch.float16
-    ).to(args.device)
+    target_model = AutoModelForCausalLM.from_pretrained(TARGET_MODEL).to(args.device)
+    draft_model = AutoModelForCausalLM.from_pretrained(DRAFT_MODEL).to(args.device)
+    # If you want to use fine-tuned model from checkpoint as draft model, uncomment two rows below
+    # finetuned_model = Lit.load_from_checkpoint("<CHECKPOINT>", draft_model=draft_model)
+    # draft_model = finetuned_model
     
-    draft_model = AutoModelForCausalLM.from_pretrained(
-        SMALL_DRAFT_MODEL, 
-        torch_dtype=torch.float16
-    ).to(args.device)"""
-    
-    target_model = AutoModelForCausalLM.from_pretrained(SMALL_TARGET_MODEL).to(args.device)
-    
-    draft_model = AutoModelForCausalLM.from_pretrained(SMALL_DRAFT_MODEL).to(args.device)
-    #finetuned_model = Lit.load_from_checkpoint("checkpoints/epoch=9-step=11060.ckpt", draft_model=draft_model)
-    #draft_model = finetuned_model
-    
-    tokenizer = AutoTokenizer.from_pretrained(SMALL_TARGET_MODEL)
+    tokenizer = AutoTokenizer.from_pretrained(TARGET_MODEL)
     print("Models loaded successfully.")
     
     if args.benchmark:
