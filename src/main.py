@@ -6,7 +6,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from constants import CUDA_DEVICE, SMALL_DRAFT_MODEL, SMALL_TARGET_MODEL, TARGET_MODEL, DRAFT_MODEL
 from mode import interactive_mode, benchmark_mode
 from plots import generate_results_plots_for_benchmark
-from finetune_draft_model import Lit
+from finetune_draft_model import Lit, create_peft_config
 
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 
@@ -46,9 +46,11 @@ if __name__ == "__main__":
     
     target_model = AutoModelForCausalLM.from_pretrained(TARGET_MODEL).to(args.device)
     draft_model = AutoModelForCausalLM.from_pretrained(DRAFT_MODEL).to(args.device)
-    # If you want to use fine-tuned model from checkpoint as draft model, uncomment two rows below
-    # finetuned_model = Lit.load_from_checkpoint("<CHECKPOINT>", draft_model=draft_model)
-    # draft_model = finetuned_model
+    # If you want to use fine-tuned model from checkpoint as draft model, uncomment four rows below
+    #draft_model = AutoModelForCausalLM.from_pretrained(DRAFT_MODEL)
+    #draft_model = create_peft_config(draft_model)
+    #draft_model.load_state_dict(torch.load("fine_tuned_weights.pth"), strict=False)
+    #draft_model = draft_model.to(args.device)
     
     tokenizer = AutoTokenizer.from_pretrained(TARGET_MODEL)
     print("Models loaded successfully.")

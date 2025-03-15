@@ -2,7 +2,7 @@ import torch
 import lightning as L
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from torch.nn import functional as F
-from constants import CUDA_DEVICE, DRAFT_MODEL, EPS, TARGET_MODEL
+from constants import CUDA_DEVICE, DRAFT_MODEL, EPS, TARGET_MODEL, SMALL_TARGET_MODEL, SMALL_DRAFT_MODEL
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from datamodule import WikiTextV2Datamodule
 import os
@@ -13,7 +13,7 @@ from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 
 class Lit(L.LightningModule):
     def __init__(
-        self, draft_model, learning_rate=1e-6, weight_decay=0.01,
+        self, draft_model, learning_rate=1e-6, weight_decay=0.01, temperature=2.0,
     ):
         super().__init__()
         self.save_hyperparameters(ignore=['draft_model'])
@@ -21,6 +21,7 @@ class Lit(L.LightningModule):
         self.draft_model.train()
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
+        self.temperature = temperature 
     
     def forward(self, *args, **kwargs):
         return self.draft_model(*args, **kwargs)
@@ -29,9 +30,12 @@ class Lit(L.LightningModule):
         input_ids = batch["input_ids"]
         target_logits = batch["logits"]
         
+        # Trying to normalize target logits
+        scaled_target_logits = target_logits / self.temperature
+        
         draft_logits = self.draft_model(input_ids).logits
         log_draft_probs = F.log_softmax(draft_logits, dim=-1)
-        target_probs = F.softmax(target_logits, dim=-1)    
+        target_probs = F.softmax(scaled_target_logits, dim=-1)    
         
         loss = F.kl_div(log_draft_probs, target_probs, reduction='batchmean')
         self.log("train_loss", loss, prog_bar=True)
@@ -41,9 +45,11 @@ class Lit(L.LightningModule):
         input_ids = batch["input_ids"]
         target_logits = batch["logits"]
     
+        scaled_target_logits = target_logits / self.temperature
+        
         draft_logits = self.draft_model(input_ids).logits
-        log_draft_probs = F.log_softmax(draft_logits, dim=-1)
-        target_probs = F.softmax(target_logits, dim=-1)
+        log_draft_probs = F.log_softmax(draft_logits, dim=-1).clamp(min=EPS)
+        target_probs = F.softmax(scaled_target_logits, dim=-1).clamp(min=EPS)
         
         loss = F.kl_div(log_draft_probs, target_probs, reduction='batchmean')
         self.log("val_loss", loss, prog_bar=True)
@@ -114,3 +120,5 @@ if __name__ == "__main__":
 
     fine_tuned_model = Lit(draft_model=draft_model, learning_rate=1e-6)
     trainer.fit(model=fine_tuned_model, datamodule=datamodule)
+    
+    torch.save(fine_tuned_model.state_dict(), "fine_tuned_weights.pth")
