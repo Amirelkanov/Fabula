@@ -20,3 +20,15 @@ You can run model finetuning by:
 * https://arxiv.org/abs/2503.07807
 
 P.S. Careful with `CUDA_DEVICE` constant! Maybe you will need to change it.
+
+Results `(temperature = 0)`:
+
+* With fine-tuning:
+![](benchmark_plots/fine_tuned_latency_distributions.png)
+![](benchmark_plots/fine_tuned_speedup_distribution.png)
+![](benchmark_plots/fine_tuned_throughput_distributions.png)
+
+* Without:
+![](benchmark_plots/latency_distributions.png)
+![](benchmark_plots/speedup_distribution.png)
+![](benchmark_plots/throughput_distributions.png)
